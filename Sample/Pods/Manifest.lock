@@ -1,0 +1,16 @@
+PODS:
+  - P9ViewDragger (1.2.0)
+
+DEPENDENCIES:
+  - P9ViewDragger (~> 1.2.0)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - P9ViewDragger
+
+SPEC CHECKSUMS:
+  P9ViewDragger: 2562e9f5b16564118d78ba845d8ff665fbc7b750
+
+PODFILE CHECKSUM: 74e3539746d7390ca81b7012e040e93f0e0286c1
+
+COCOAPODS: 1.5.3

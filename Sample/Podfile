@@ -1,0 +1,6 @@
+source 'https://github.com/CocoaPods/Specs.git'
+platform :ios, '8.0'
+
+target "Sample" do
+	pod 'P9ViewDragger', '~> 1.2.0'
+end
