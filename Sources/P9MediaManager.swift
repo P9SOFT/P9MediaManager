@@ -288,7 +288,6 @@ class P9MediaManager: NSObject {
             releaseObserversOf(player: player)
         }
         if let playerLayer = node.playerLayer {
-            playerLayer.removeFromSuperlayer()
             playerLayer.player = nil
             node.playerLayer = nil
         }
@@ -313,7 +312,6 @@ class P9MediaManager: NSObject {
                 releaseObserversOf(player: player)
             }
             if let playerLayer = node.playerLayer {
-                playerLayer.removeFromSuperlayer()
                 playerLayer.player = nil
                 node.playerLayer = nil
             }
@@ -356,7 +354,6 @@ class P9MediaManager: NSObject {
                 }
                 return true
             }
-            placedPlayerLayer.removeFromSuperlayer()
             placedPlayerLayer.player = nil
             event = .placeAgain
         }
@@ -384,7 +381,6 @@ class P9MediaManager: NSObject {
             return false
         }
         
-        placeAvLayer.removeFromSuperlayer()
         placeAvLayer.player = nil
         node.playerLayer = nil
         
