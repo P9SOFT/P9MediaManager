@@ -23,6 +23,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var timeLabel: UILabel!
     
     let customKeyPlaying = "playing"
+    let customKeySeeking = "seeking"
     let volumnBarSize:CGSize = CGSize(width: 30, height: 180)
     
     let volumnBarView:UIView = UIView(frame: .zero)
@@ -111,6 +112,7 @@ class ViewController: UIViewController {
             }
             if P9MediaManager.shared.isPlayingPlayer(forKey: self.playerView.suggestedKey) == true {
                 P9MediaManager.shared.setCustom(value: true, forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey)
+                P9MediaManager.shared.setCustom(value: true, forKey: self.customKeySeeking, ofPlayerKey: self.playerView.suggestedKey)
                 P9MediaManager.shared.pausePlayer(forKey: self.playerView.suggestedKey)
             }
         }, trackingHandler: { [weak self] (trackingView) in
@@ -135,6 +137,7 @@ class ViewController: UIViewController {
             }
             if let flag = P9MediaManager.shared.customValue(forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey) as? Bool, flag == true {
                 P9MediaManager.shared.removeCustomeValue(forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey)
+                P9MediaManager.shared.removeCustomeValue(forKey: self.customKeySeeking, ofPlayerKey: self.playerView.suggestedKey)
                 P9MediaManager.shared.playPlayer(forKey: self.playerView.suggestedKey)
             }
         }
@@ -193,6 +196,9 @@ class ViewController: UIViewController {
         case .play:
             playButton.setTitle("⏸", for: .normal)
         case .playing, .seek:
+            if let seeking = P9MediaManager.shared.customValue(forKey: customKeySeeking, ofPlayerKey: playerView.suggestedKey) as? Bool, seeking == true {
+                break
+            }
             let currentSeconds = userInfo[P9MediaManager.NotificationCurrentSeconds] as? Int64 ?? 0
             let amountSeconds = userInfo[P9MediaManager.NotificationAmountSeconds] as? Int64 ?? 0
             if amountSeconds > 0 {
