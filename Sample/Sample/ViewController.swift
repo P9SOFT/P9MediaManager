@@ -8,6 +8,7 @@
 //  Licensed under the MIT license.
 
 import UIKit
+import AVFoundation
 
 class ViewController: UIViewController {
     
@@ -27,14 +28,10 @@ class ViewController: UIViewController {
     let volumnBarView:UIView = UIView(frame: .zero)
     var mediaUrls:[URL] = []
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        
+                
         NotificationCenter.default.addObserver(self, selector: #selector(self.p9MediaManagerNotificationHandler(notification:)), name: .P9MediaManager, object: nil)
         
         mediaUrls.append(Bundle.main.url(forResource: "local_video", withExtension: "mp4")!)
@@ -52,6 +49,8 @@ class ViewController: UIViewController {
         mediaUrls.append(Bundle.main.url(forResource: "local_audio", withExtension: "mp3")!)
         mediaUrls.append(URL(string: "https://sample-videos.com/audio/mp3/wave.mp3")!)
         
+        playerView.releasePlayerWhenImOut = true
+        
         guideLabel.isHidden = true
         
         volumnBarView.backgroundColor = .white
@@ -62,7 +61,10 @@ class ViewController: UIViewController {
         mediaTableView.dataSource = self
         mediaTableView.delegate = self
         
-        P9ViewDragger.default().trackingDecoyView(volumnLabel, stageView: self.view, parameters: [P9ViewDraggerLockRotateKey:true, P9ViewDraggerLockScaleKey:true, P9ViewDraggerStartWhenTouchDownKey:true], ready: { (trackingView) in
+        P9ViewDragger.default().trackingDecoyView(volumnLabel, stageView: self.view, parameters: [P9ViewDraggerLockRotateKey:true, P9ViewDraggerLockScaleKey:true, P9ViewDraggerStartWhenTouchDownKey:true], ready: { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             self.volumnLabel.isHidden = true
             let volumn = CGFloat(P9MediaManager.shared.volumeOfPlayer(forKey: self.playerView.suggestedKey))
             let length = self.volumnBarSize.height - trackingView.frame.size.height
@@ -72,7 +74,10 @@ class ViewController: UIViewController {
             if self.volumnBarView.superview == nil {
                 self.view.insertSubview(self.volumnBarView, belowSubview: trackingView)
             }
-        }, trackingHandler: { (trackingView) in
+        }, trackingHandler: { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             let volumnThumbFrame = self.view.convert(self.volumnLabel.frame, from: self.controlContainerView)
             let baseOffset = volumnThumbFrame.origin.y - self.volumnBarView.frame.origin.y
             let length = self.volumnBarSize.height - trackingView.frame.size.height
@@ -90,19 +95,28 @@ class ViewController: UIViewController {
             P9MediaManager.shared.setVolumeOfPlayer(volume: Float(volumn), forKey: self.playerView.suggestedKey)
             transform.tx = 0
             trackingView.transform = transform
-        }) { (trackingView) in
+        }) { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             if self.volumnBarView.superview != nil {
                 self.volumnBarView.removeFromSuperview()
             }
             self.volumnLabel.isHidden = false
         }
         
-        P9ViewDragger.default().trackingView(progressThumbLabel, parameters: [P9ViewDraggerLockRotateKey:true, P9ViewDraggerLockScaleKey:true], ready: { (trackingView) in
+        P9ViewDragger.default().trackingView(progressThumbLabel, parameters: [P9ViewDraggerLockRotateKey:true, P9ViewDraggerLockScaleKey:true], ready: { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             if P9MediaManager.shared.isPlayingPlayer(forKey: self.playerView.suggestedKey) == true {
                 P9MediaManager.shared.setCustom(value: true, forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey)
                 P9MediaManager.shared.pausePlayer(forKey: self.playerView.suggestedKey)
             }
-        }, trackingHandler: { (trackingView) in
+        }, trackingHandler: { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             let maxOffset = self.progressBackgroundView.frame.size.width - self.progressThumbLabel.frame.size.width
             var transform = trackingView.transform
             if transform.tx < 0 {
@@ -115,14 +129,15 @@ class ViewController: UIViewController {
             trackingView.transform = transform
             let rate = Float(transform.tx/maxOffset)
             P9MediaManager.shared.setSeekTimeOfPlayer(rate: rate, forKey: self.playerView.suggestedKey)
-        }) { (trackingView) in
+        }) { [weak self] (trackingView) in
+            guard let `self` = self else {
+                return
+            }
             if let flag = P9MediaManager.shared.customValue(forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey) as? Bool, flag == true {
                 P9MediaManager.shared.removeCustomeValue(forKey: self.customKeyPlaying, ofPlayerKey: self.playerView.suggestedKey)
                 P9MediaManager.shared.playPlayer(forKey: self.playerView.suggestedKey)
             }
         }
-        
-        controlContainerView.isHidden = true
     }
     
     @IBAction func playButtonTouchUpInside(_ sender: Any) {

@@ -18,12 +18,12 @@ import UIKit
     var p9MediaView:P9MediaView {
         get {
             for subview in subviews {
-                if let playView = subview as? P9MediaView, playView.tag == 20140101 {
+                if let playView = subview as? P9MediaView, playView.tag == P9MediaView.suggestedTagIdForSinglePlay {
                     return playView
                 }
             }
             let playView = P9MediaView(frame: self.bounds)
-            playView.tag = 20140101
+            playView.tag = P9MediaView.suggestedTagIdForSinglePlay
             playView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             playView.releasePlayerWhenImOut = true
             self.addSubview(playView)
@@ -39,18 +39,20 @@ import UIKit
      @param loop If you want to play loop then set it.
      @param autoPlayWhenReadyFlag If you want to auto play when given resource ready then set it.
      @param rewindIfPlaying If you want to play rewind then set it.
+     @returns playing or not.
      */
-    func p9MediaPlay(resourceUrl:URL, mute:Bool, loop:Bool, autoPlayWhenReady:Bool, rewindIfPlaying:Bool) {
+    @discardableResult func p9MediaPlay(resourceUrl:URL, mute:Bool, loop:Bool, autoPlayWhenReady:Bool, rewindIfPlaying:Bool) -> Bool {
         
-        P9MediaManager.shared.setPlayer(resourceUrl: resourceUrl, forKey: p9MediaView.suggestedKey)
-        if P9MediaManager.shared.isPlacedPlayer(forKey: p9MediaView.suggestedKey) == false {
-            P9MediaManager.shared.placePlayer(forKey: p9MediaView.suggestedKey, toView: p9MediaView, mute: mute, loop: loop, autoPlayWhenReadyFlag: autoPlayWhenReady)
-        } else {
-            if rewindIfPlaying == true {
-                P9MediaManager.shared.setSeekTimeOfPlayer(rate: 0, forKey: p9MediaView.suggestedKey)
-            }
-            P9MediaManager.shared.playPlayer(forKey: p9MediaView.suggestedKey)
+        if P9MediaManager.shared.setPlayer(resourceUrl: resourceUrl, forKey: p9MediaView.suggestedKey) == false {
+            return false
         }
+        if P9MediaManager.shared.isPlacedPlayer(forKey: p9MediaView.suggestedKey) == false {
+            return P9MediaManager.shared.placePlayer(forKey: p9MediaView.suggestedKey, toView: p9MediaView, mute: mute, loop: loop, autoPlayWhenReadyFlag: autoPlayWhenReady)
+        }
+        if rewindIfPlaying == true {
+            P9MediaManager.shared.setSeekTimeOfPlayer(rate: 0, forKey: p9MediaView.suggestedKey)
+        }
+        return P9MediaManager.shared.playPlayer(forKey: p9MediaView.suggestedKey)
     }
     
     /*!
@@ -78,7 +80,7 @@ import UIKit
     func p9MediaClear() {
         
         for subview in subviews {
-            if let playView = subview as? P9MediaView, playView.tag == 20140101 {
+            if let playView = subview as? P9MediaView, playView.tag == P9MediaView.suggestedTagIdForSinglePlay {
                 P9MediaManager.shared.displacePlayer(forKey: playView.suggestedKey)
                 P9MediaManager.shared.releasePlayer(forKey: playView.suggestedKey)
                 playView.removeFromSuperview()
