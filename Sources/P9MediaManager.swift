@@ -617,7 +617,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns muted or not.
      */
-    func isMutedPlayer(forKey key:String) -> Bool {
+    @objc func isMutedPlayer(forKey key:String) -> Bool {
         
         return nodes[key]?.player?.isMuted ?? false
     }
