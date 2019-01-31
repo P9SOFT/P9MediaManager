@@ -74,7 +74,7 @@ class MediaTableViewCell: UITableViewCell {
     
     @objc func p9MediaManagerNotificationHandler(notification:Notification) {
         
-        guard let userInfo = notification.userInfo, let key = userInfo[P9MediaManager.NotificationPlayerKey] as? String, let event = userInfo[P9MediaManager.NotificationEvent] as? P9MediaManager.Event, key == mediaImageView.p9MediaView.suggestedKey else {
+        guard let userInfo = notification.userInfo, let key = userInfo[P9MediaManager.NotificationPlayerKey] as? String, let eventValue = userInfo[P9MediaManager.NotificationEvent] as? Int, let event = P9MediaManager.Event(rawValue: eventValue), key == mediaImageView.p9MediaView.suggestedKey else {
             return
         }
         

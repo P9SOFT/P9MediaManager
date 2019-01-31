@@ -970,7 +970,7 @@ extension P9MediaManager {
     
     fileprivate func notify(key:String, event:Event, parameters:[String:Any]?=nil) {
         
-        var userInfo:[AnyHashable:Any] = [P9MediaManager.NotificationPlayerKey:key, P9MediaManager.NotificationEvent:event]
+        var userInfo:[AnyHashable:Any] = [P9MediaManager.NotificationPlayerKey:key, P9MediaManager.NotificationEvent:event.rawValue]
         parameters?.forEach({ (key, value) in
             userInfo[key] = value
         })
