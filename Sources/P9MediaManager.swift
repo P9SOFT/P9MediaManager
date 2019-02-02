@@ -168,13 +168,28 @@ class P9MediaManager: NSObject {
     fileprivate let keyPathStatus = "status"
     fileprivate let keyPathLoadedTimeRanges = "loadedTimeRanges"
     
-    fileprivate class MediaNode {
-        var resourceUrlString:String?
-        var playerItem:AVPlayerItem?
+    fileprivate class MediaItem {
+        
+        var resourceUrl:URL
+        var playerItem:AVPlayerItem
+        var playerItemVideoOutput:AVPlayerItemVideoOutput
+        init(resourceUrl:URL, playerItem:AVPlayerItem, playerItemVideoOutput:AVPlayerItemVideoOutput) {
+            self.resourceUrl = resourceUrl
+            self.playerItem = playerItem
+            self.playerItemVideoOutput = playerItemVideoOutput
+        }
+    }
+    
+    fileprivate class PlayNode {
+        
         var player:AVPlayer?
         var playerLayer:AVPlayerLayer?
         var autoPlayWhenReady:Bool = false
         var loop:Bool = false
+        var userInfo:[String:Any] = [:]
+        var snapshotRefer:(completion:((URL, Int64, UIImage?) -> Void)?, pickSecond:Int64, useMemoryCache:Bool)?
+        var mediaItem:MediaItem?
+        var readyToPlay:Bool = false
         var amountSeconds:Int64 = 0
         var availableSeconds:Int64 = 0
         var haveVideoTrack:Bool = false
@@ -182,12 +197,33 @@ class P9MediaManager: NSObject {
         var haveClosedCaptionTrack:Bool = false
         var haveSubtitleTrack:Bool = false
         var subtitles:[String] = []
-        var userInfo:[String:Any] = [:]
+        func resetMediaHandlingValues() {
+            mediaItem = nil
+            readyToPlay = false
+            amountSeconds = 0
+            availableSeconds = 0
+            haveAudioTrack = false
+            haveVideoTrack = false
+            haveClosedCaptionTrack = false
+            haveSubtitleTrack = false
+            subtitles.removeAll()
+        }
     }
     
-    fileprivate var nodes:[String:MediaNode] = [:]
+    fileprivate class SnapshotNode {
+        var pickSecond:Int64 = 0
+        var image:UIImage?
+        init(pickSecond:Int64, image:UIImage?) {
+            self.pickSecond = pickSecond
+            self.image = image
+        }
+    }
+    
+    fileprivate let localQueue = DispatchQueue(label: "p9.manager.media.main.queue")
+    fileprivate var nodes:[String:PlayNode] = [:]
     fileprivate var playbackTimeObservers:[AVPlayer:Any] = [:]
     fileprivate var keyForPlayerItem:[AVPlayerItem:String] = [:]
+    fileprivate var snapshots:[String:SnapshotNode] = [:]
     
     /*!
      @property shared
@@ -212,46 +248,15 @@ class P9MediaManager: NSObject {
      */
     @objc @discardableResult func setPlayer(resourceUrl:URL, forKey key:String) -> Bool {
         
-        let node = nodes[key] ?? MediaNode()
+        let node = nodes[key] ?? PlayNode()
         let resourceUrlString = resourceUrl.absoluteString
         
-        if let previousResourceUrlString = node.resourceUrlString, previousResourceUrlString == resourceUrlString {
+        if let previousResourceUrlString = node.mediaItem?.resourceUrl.absoluteString, previousResourceUrlString == resourceUrlString {
             notify(key: key, event: .standbyAlready, parameters: [P9MediaManager.NotificationResourceUrlString:previousResourceUrlString])
             return true
         }
-        
-        if let item = node.playerItem {
-            releaseObserversOfItem(item: item)
-            keyForPlayerItem.removeValue(forKey: item)
-        }
-        let item = AVPlayerItem(url: resourceUrl)
-        item.addObserver(self, forKeyPath: keyPathStatus, options: .new, context: nil)
-        item.addObserver(self, forKeyPath: keyPathLoadedTimeRanges, options: .new, context: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.avPlayerItemDidPlayToEndTimeHandler(notification:)), name: .AVPlayerItemDidPlayToEndTime, object: item)
-        
-        var event:Event = .standby
-        if let player = node.player {
-            releaseObserversOfPlayer(player: player)
-            playbackTimeObservers.removeValue(forKey: player)
-            player.replaceCurrentItem(with: nil)
-            player.replaceCurrentItem(with: item)
-            event = .standbyAgain
-        } else {
-            node.player = AVPlayer(playerItem: item)
-        }
-        node.amountSeconds = 0
-        node.availableSeconds = 0
-        node.haveAudioTrack = false
-        node.haveVideoTrack = false
-        node.haveClosedCaptionTrack = false
-        node.haveSubtitleTrack = false
-        node.subtitles.removeAll()
-        node.resourceUrlString = resourceUrlString
-        node.playerItem = item
-        keyForPlayerItem[item] = key
-        nodes[key] = node
-        
-        notify(key: key, event: event, parameters: [P9MediaManager.NotificationResourceUrlString:node.resourceUrlString ?? ""])
+        let event = setNode(node, withUrl: resourceUrl, key: key)
+        notify(key: key, event: event, parameters: [P9MediaManager.NotificationResourceUrlString:resourceUrl.absoluteString])
         
         return true
     }
@@ -280,13 +285,15 @@ class P9MediaManager: NSObject {
         
         if let player = node.player {
             player.pause()
-            releaseObserversOfPlayer(player: player)
-            playbackTimeObservers.removeValue(forKey: player)
+            releaseObserversOf(player: player)
         }
-        node.playerLayer = nil
-        if let item = node.playerItem {
-            releaseObserversOfItem(item: item)
-            keyForPlayerItem.removeValue(forKey: item)
+        if let playerLayer = node.playerLayer {
+            playerLayer.player = nil
+            node.playerLayer = nil
+        }
+        if let playerItem = node.mediaItem?.playerItem {
+            releaseObserversOf(playerItem: playerItem)
+            keyForPlayerItem.removeValue(forKey: playerItem)
         }
         nodes.removeValue(forKey: key)
         
@@ -302,17 +309,19 @@ class P9MediaManager: NSObject {
         for (key, node) in nodes {
             if let player = node.player {
                 player.pause()
-                releaseObserversOfPlayer(player: player)
+                releaseObserversOf(player: player)
             }
-            node.playerLayer = nil
-            if let item = node.playerItem {
-                releaseObserversOfItem(item: item)
-                keyForPlayerItem.removeValue(forKey: item)
+            if let playerLayer = node.playerLayer {
+                playerLayer.player = nil
+                node.playerLayer = nil
+            }
+            if let playerItem = node.mediaItem?.playerItem {
+                releaseObserversOf(playerItem: playerItem)
+                keyForPlayerItem.removeValue(forKey: playerItem)
             }
             notify(key: key, event: .release)
         }
         nodes.removeAll()
-        keyForPlayerItem.removeAll()
         playbackTimeObservers.removeAll()
     }
     
@@ -517,7 +526,7 @@ class P9MediaManager: NSObject {
      */
     @objc @discardableResult func selectSubtitle(byDisplayName displayName:String?, forKey key:String) -> Bool {
         
-        guard let node = nodes[key], let player = node.player, let item = node.playerItem, playbackTimeObservers[player] != nil else {
+        guard let node = nodes[key], let player = node.player, let item = node.mediaItem?.playerItem, playbackTimeObservers[player] != nil else {
             return false
         }
         guard let selectionGroup = item.asset.mediaSelectionGroup(forMediaCharacteristic: .legible), selectionGroup.options.count > 0 else {
@@ -608,7 +617,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns muted or not.
      */
-    func isMutedPlayer(forKey key:String) -> Bool {
+    @objc func isMutedPlayer(forKey key:String) -> Bool {
         
         return nodes[key]?.player?.isMuted ?? false
     }
@@ -682,11 +691,7 @@ class P9MediaManager: NSObject {
      */
     @objc func resourceUrlOfPlayer(forKey key:String) -> URL? {
         
-        guard let node = nodes[key], let resourceUrlString = node.resourceUrlString else {
-            return nil
-        }
-        
-        return URL(string: resourceUrlString)
+        return nodes[key]?.mediaItem?.resourceUrl
     }
     
     /*!
@@ -752,11 +757,11 @@ class P9MediaManager: NSObject {
      */
     @objc func currentSecondsOfPlayer(forKey key:String) -> Int64 {
         
-        guard let item = nodes[key]?.playerItem else {
+        guard let playerItem = nodes[key]?.mediaItem?.playerItem else {
             return 0
         }
         
-        return Int64(CMTimeGetSeconds(item.currentTime()))
+        return Int64(CMTimeGetSeconds(playerItem.currentTime()))
     }
     
     /*!
@@ -789,6 +794,7 @@ class P9MediaManager: NSObject {
         
         return true
     }
+    
     /*!
      @method removeCustomValueForKey:ofPlayerKey:
      @abstract Remove value of custom information of player that given key.
@@ -806,6 +812,172 @@ class P9MediaManager: NSObject {
         
         return true
     }
+    
+    /*!
+     @method snapshotImageOfResourceUrl:pickSecond:useMemoryCache:compeltion:
+     @abstract Get snapshot of media resource that given url.
+     @param ofResourceUrl Media resource url to take snapshot.
+     @param pickSecond Second of media resource to take snapshot.
+     @param useMemoryCache P9MediaManagaer make memory cache for given resource url and pick second automatically. If you want get cached snapshot image immediately, set it to true.
+     @param completion Business code block to execute after get snapshot image.
+     */
+    @objc func snapshotImage(ofResourceUrl resourceUrl:URL, pickSecond:Int64, useMemoryCache:Bool, completion: @escaping ((URL, Int64, UIImage?) -> Void)) {
+        
+        let urlString = resourceUrl.absoluteString
+        if useMemoryCache == true, let snapshot = snapshots[urlString], snapshot.pickSecond == pickSecond {
+            DispatchQueue.main.async {
+                completion(resourceUrl, pickSecond, snapshot.image)
+            }
+            return
+        }
+        
+        if resourceUrl.isFileURL == true {
+            let imageGenerator = AVAssetImageGenerator(asset: AVAsset(url: resourceUrl))
+            imageGenerator.appliesPreferredTrackTransform = true
+            let pickTime = CMTimeMake(value: pickSecond, timescale: 1)
+            imageGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: pickTime)]) { (requestedTime, cgImage, actureTime, result, error) in
+                let snapshotImage:UIImage? = (cgImage != nil) ? UIImage(cgImage: cgImage!) : nil
+                if useMemoryCache == true {
+                    self.snapshots[resourceUrl.absoluteString] = SnapshotNode(pickSecond: pickSecond, image: snapshotImage)
+                }
+                DispatchQueue.main.async {
+                    completion(resourceUrl, pickSecond, snapshotImage)
+                }
+            }
+            return
+        }
+        
+        let key = "snapshot:\(resourceUrl.absoluteString)"
+        let node = PlayNode()
+        let event = setNode(node, withUrl: resourceUrl, key: key)
+        node.snapshotRefer = (completion, pickSecond, useMemoryCache)
+        notify(key: key, event: event, parameters: [P9MediaManager.NotificationResourceUrlString:resourceUrl.absoluteString])
+    }
+    
+    /*!
+     @method removeSnapshotCacheResourceUrl:
+     @abstract Remove cached snapshot image for given media resource url.
+     */
+    @objc func removeSnapshotCache(resourceUrl:URL) {
+        
+        snapshots.removeValue(forKey: resourceUrl.absoluteString)
+    }
+    
+    /*!
+     @method removeAllSnapshotCache
+     @abstract Remove all cached snapshot images.
+     */
+    @objc func removeAllSnapshotCache() {
+        
+        snapshots.removeAll()
+    }
+    
+    /*!
+     @method snapshotPlayerForKey:
+     @abstract Get snapshot current frame of player for given key.
+     */
+    @objc func snapshotPlayer(forKey key:String) -> UIImage? {
+        
+        guard let node = nodes[key], let playerItem = node.mediaItem?.playerItem, let videoOutput = node.mediaItem?.playerItemVideoOutput else {
+            return nil
+        }
+
+        let currentTime = playerItem.currentTime()
+        if videoOutput.hasNewPixelBuffer(forItemTime: currentTime) == true, let pixelBuffer = videoOutput.copyPixelBuffer(forItemTime: currentTime, itemTimeForDisplay: nil) {
+            let image = UIImage(ciImage: CIImage(cvPixelBuffer: pixelBuffer))
+            return image
+        }
+        
+        return nil
+    }
+}
+
+extension P9MediaManager {
+    
+    @discardableResult fileprivate func setNode(_ node:PlayNode, withUrl url:URL, key:String) -> Event {
+        
+        if let previousPlayerItem = node.mediaItem?.playerItem {
+            releaseObserversOf(playerItem: previousPlayerItem)
+            keyForPlayerItem.removeValue(forKey: previousPlayerItem)
+        }
+        let playerItem = AVPlayerItem(url: url)
+        let videoOutput = AVPlayerItemVideoOutput(pixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange])
+        playerItem.add(videoOutput)
+        playerItem.addObserver(self, forKeyPath: keyPathLoadedTimeRanges, options: .new, context: nil)
+        playerItem.addObserver(self, forKeyPath: keyPathStatus, options: .new, context: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.avPlayerItemDidPlayToEndTimeHandler(notification:)), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+        
+        var replaced:Bool = false
+        
+        node.resetMediaHandlingValues()
+        node.mediaItem = MediaItem(resourceUrl: url, playerItem: playerItem, playerItemVideoOutput: videoOutput)
+        if let player = node.player {
+            releaseObserversOf(player: player)
+            player.replaceCurrentItem(with: nil)
+            player.replaceCurrentItem(with: playerItem)
+            replaced = true
+        } else {
+            node.player = AVPlayer(playerItem: playerItem)
+        }
+        
+        nodes[key] = node
+        keyForPlayerItem[playerItem] = key
+        
+        return (replaced == true ? .standbyAgain : .standby)
+    }
+    
+    fileprivate func releaseObserversOf(playerItem:AVPlayerItem) {
+        
+        playerItem.removeObserver(self, forKeyPath: keyPathStatus, context: nil)
+        playerItem.removeObserver(self, forKeyPath: keyPathLoadedTimeRanges, context: nil)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+    }
+    
+    fileprivate func releaseObserversOf(player:AVPlayer) {
+        
+        if let observer = playbackTimeObservers[player] {
+            player.removeTimeObserver(observer)
+        }
+        playbackTimeObservers.removeValue(forKey: player)
+    }
+    
+    fileprivate func processSnapshotOfPlayer(forKey key:String) {
+        
+        guard let node = nodes[key], let mediaItem = node.mediaItem, let snapshotRefer = node.snapshotRefer, node.readyToPlay == true else {
+            return
+        }
+        
+        let pickSecond:Int64 = (snapshotRefer.pickSecond < node.amountSeconds) ? snapshotRefer.pickSecond : node.amountSeconds
+        
+        if node.availableSeconds >= pickSecond {
+            let currentTime = CMTimeMake(value: pickSecond, timescale: 1)
+            var snapshotImage:UIImage?
+            if mediaItem.playerItemVideoOutput.hasNewPixelBuffer(forItemTime: currentTime) == true, let pixelBuffer = mediaItem.playerItemVideoOutput.copyPixelBuffer(forItemTime: currentTime, itemTimeForDisplay: nil) {
+                snapshotImage = UIImage(ciImage: CIImage(cvPixelBuffer: pixelBuffer))
+            }
+            if snapshotRefer.useMemoryCache == true {
+                snapshots[mediaItem.resourceUrl.absoluteString] = SnapshotNode(pickSecond: snapshotRefer.pickSecond, image: snapshotImage)
+            }
+            if let snapshotCompletion = snapshotRefer.completion {
+                DispatchQueue.main.async {
+                    snapshotCompletion(mediaItem.resourceUrl, pickSecond, snapshotImage)
+                }
+            }
+            releasePlayer(forKey: key)
+            node.snapshotRefer = nil
+        }
+    }
+    
+    fileprivate func notify(key:String, event:Event, parameters:[String:Any]?=nil) {
+        
+        var userInfo:[AnyHashable:Any] = [P9MediaManager.NotificationPlayerKey:key, P9MediaManager.NotificationEvent:event.rawValue]
+        parameters?.forEach({ (key, value) in
+            userInfo[key] = value
+        })
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .P9MediaManager, object: nil, userInfo: userInfo)
+        }
+    }
 }
 
 extension P9MediaManager {
@@ -820,9 +992,10 @@ extension P9MediaManager {
         case keyPathStatus:
             switch item.status {
             case .readyToPlay:
-                if node.amountSeconds != 0 {
+                if node.readyToPlay == true {
                     break
                 }
+                node.readyToPlay = true
                 node.amountSeconds = (CMTimeCompare(item.duration, CMTime.indefinite) != 0) ? Int64(Double(item.duration.value)/Double(item.duration.timescale)) : 0
                 for track in item.tracks {
                     if let assetTrack = track.assetTrack, assetTrack.isEnabled == true {
@@ -845,7 +1018,7 @@ extension P9MediaManager {
                         }
                     }
                 }
-                let observer = player.addPeriodicTimeObserver(forInterval: CMTimeMake(value: 1, timescale: 1), queue: DispatchQueue.main, using: { [weak self] time in
+                let observer = player.addPeriodicTimeObserver(forInterval: CMTimeMake(value: 1, timescale: 1), queue: localQueue, using: { [weak self] time in
                     let currentSeconds = Int64(Double(item.currentTime().value)/Double((item.currentTime().timescale != 0) ? item.currentTime().timescale : 1))
                     if node.availableSeconds > 0, currentSeconds < node.availableSeconds {
                         self?.notify(key: key, event: .playing, parameters:[P9MediaManager.NotificationCurrentSeconds:currentSeconds,
@@ -860,11 +1033,31 @@ extension P9MediaManager {
                                                                    P9MediaManager.NotificationHaveAudioTrack:node.haveAudioTrack,
                                                                    P9MediaManager.NotificationHaveClosedCaptionTrack:node.haveClosedCaptionTrack,
                                                                    P9MediaManager.NotificationHaveSubtitleTrack:node.haveSubtitleTrack])
+                if let snapshotRefer = node.snapshotRefer {
+                    let pickSecond:Int64 = (snapshotRefer.pickSecond < node.amountSeconds) ? snapshotRefer.pickSecond : node.amountSeconds
+                    if node.amountSeconds > 0, pickSecond > 1, pickSecond > node.availableSeconds {
+                        player.seek(to: CMTimeMake(value: pickSecond, timescale: 1)) { (finished) in
+                            self.processSnapshotOfPlayer(forKey: key)
+                        }   
+                    } else {
+                        processSnapshotOfPlayer(forKey: key)
+                    }
+                }
                 if node.autoPlayWhenReady == true {
                     player.play()
                     notify(key: key, event: .play)
                 }
             case .failed:
+                if let snapshotRefer = node.snapshotRefer, let mediaItem = node.mediaItem {
+                    if snapshotRefer.useMemoryCache == true {
+                        snapshots[mediaItem.resourceUrl.absoluteString] = SnapshotNode(pickSecond: snapshotRefer.pickSecond, image: nil)
+                    }
+                    if let snapshotCompletion = snapshotRefer.completion {
+                        snapshotCompletion(mediaItem.resourceUrl, snapshotRefer.pickSecond, nil)
+                    }
+                    releasePlayer(forKey: key)
+                    node.snapshotRefer = nil
+                }
                 notify(key: key, event: .fail)
             default :
                 break
@@ -872,6 +1065,9 @@ extension P9MediaManager {
         case keyPathLoadedTimeRanges :
             if let timeRange = player.currentItem?.loadedTimeRanges.first as? CMTimeRange  {
                 node.availableSeconds = Int64(CMTimeGetSeconds(timeRange.start) + CMTimeGetSeconds(timeRange.duration))
+                if node.snapshotRefer != nil, node.readyToPlay == true {
+                    processSnapshotOfPlayer(forKey: key)
+                }
                 notify(key: key, event: .buffering, parameters: [P9MediaManager.NotificationAvailableSeconds:node.availableSeconds])
             }
         default:
@@ -891,31 +1087,6 @@ extension P9MediaManager {
             playPlayer(forKey: key)
         } else {
             notify(key: key, event: .playToEnd)
-        }
-    }
-    
-    fileprivate func releaseObserversOfItem(item:AVPlayerItem) {
-        
-        item.removeObserver(self, forKeyPath: keyPathStatus, context: nil)
-        item.removeObserver(self, forKeyPath: keyPathLoadedTimeRanges, context: nil)
-        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
-    }
-    
-    fileprivate func releaseObserversOfPlayer(player:AVPlayer) {
-        
-        if let observer = playbackTimeObservers[player] {
-            player.removeTimeObserver(observer)
-        }
-    }
-    
-    fileprivate func notify(key:String, event:Event, parameters:[String:Any]?=nil) {
-        
-        var userInfo:[AnyHashable:Any] = [P9MediaManager.NotificationPlayerKey:key, P9MediaManager.NotificationEvent:event]
-        parameters?.forEach({ (key, value) in
-            userInfo[key] = value
-        })
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .P9MediaManager, object: nil, userInfo: userInfo)
         }
     }
 }

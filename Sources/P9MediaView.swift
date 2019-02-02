@@ -17,10 +17,16 @@ import AVFoundation
 class P9MediaView: UIView {
     
     /*!
+     @property suggestedTagIdForSinglePlay
+     @abstract It'll use for tag value of view to check be single on some other's subview.
+     */
+    @objc static let suggestedTagIdForSinglePlay:Int = 20140101
+    
+    /*!
      @property suggestedKey
      @abstract suggested player key for this view
      */
-    @objc let suggestedKey:String = UUID().uuidString
+    @objc var suggestedKey:String = UUID().uuidString
     
     /*!
      @property releasePlayerWhenImOut
@@ -44,19 +50,6 @@ class P9MediaView: UIView {
     override class var layerClass: AnyClass {
         get {
             return AVPlayerLayer.self
-        }
-    }
-    
-    /*!
-     @property player
-     @abstractProperty to handling AVPlayer
-     */
-    var player:AVPlayer? {
-        get {
-            return (self.layer as? AVPlayerLayer)?.player
-        }
-        set {
-            (self.layer as? AVPlayerLayer)?.player = newValue
         }
     }
 }

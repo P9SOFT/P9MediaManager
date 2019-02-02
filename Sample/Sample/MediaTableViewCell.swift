@@ -22,10 +22,6 @@ class MediaTableViewCell: UITableViewCell {
     @IBOutlet weak var haveSubtitleTrackLabel: UILabel!
     @IBOutlet weak var underlineView: UIView!
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
     var url:URL? {
         didSet {
             if let url = url {
@@ -44,6 +40,7 @@ class MediaTableViewCell: UITableViewCell {
                 haveSubtitleTrackLabel.textColor = haveSubtitleTrack ? .black : .lightGray
                 haveSubtitleTrackLabel.layer.borderColor = haveSubtitleTrackLabel.textColor.cgColor
                 titleLabel.text = url.lastPathComponent
+                mediaImageView.p9MediaView.isHidden = false
                 mediaImageView.p9MediaPlay(resourceUrl: url, mute: true, loop: true, autoPlayWhenReady: true, rewindIfPlaying: false)
             } else {
                 titleLabel.text = "--"
@@ -68,15 +65,16 @@ class MediaTableViewCell: UITableViewCell {
         NotificationCenter.default.addObserver(self, selector: #selector(self.p9MediaManagerNotificationHandler(notification:)), name: .P9MediaManager, object: nil)
     }
     
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-        // Configure the view for the selected state
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        mediaImageView.image = nil
+        mediaImageView.p9MediaView.isHidden = true
     }
     
     @objc func p9MediaManagerNotificationHandler(notification:Notification) {
         
-        guard let userInfo = notification.userInfo, let key = userInfo[P9MediaManager.NotificationPlayerKey] as? String, let event = userInfo[P9MediaManager.NotificationEvent] as? P9MediaManager.Event, key == mediaImageView.p9MediaView.suggestedKey else {
+        guard let userInfo = notification.userInfo, let key = userInfo[P9MediaManager.NotificationPlayerKey] as? String, let eventValue = userInfo[P9MediaManager.NotificationEvent] as? Int, let event = P9MediaManager.Event(rawValue: eventValue), key == mediaImageView.p9MediaView.suggestedKey else {
             return
         }
         

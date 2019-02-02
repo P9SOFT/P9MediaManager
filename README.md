@@ -113,6 +113,22 @@ NotificationCenter.default.addObserver(self, selector: #selector(self.p9MediaMan
 }
 ```
 
+And, you can get snapshot image from media resource url, without making player.
+
+```swift
+P9MediaManager.shared.snapshotImage(ofResourceUrl: url, pickSecond: 2, useMemoryCache: true) { (resourceUrl, pickedSecond, snapshotImage) in
+    self.imageView.image = snapshotImage
+}
+```
+
+You can also get snapshot image of current frame from playing media.
+
+```swift
+if let snapshotImage = P9MediaManager.shared.snapshotPlayer(forKey: myResourceKey) {
+    self.imageView.image = snapshotImage
+}
+```
+
 # License
 
 MIT License, where applicable. http://en.wikipedia.org/wiki/MIT_License
