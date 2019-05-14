@@ -53,6 +53,7 @@ class P9MediaManager: NSObject {
     @objc static let NotificationAvailableSeconds = "P9MediaManagerNotificationAvailableSeconds"
     @objc static let NotificationMute = "P9MediaManagerNotificationMute"
     @objc static let NotificationVolumn = "P9MediaManagerNotificationVolumn"
+    @objc static let NotificationPlayRate = "P9MediaManagerNotificationPlayRate"
     
     /*!
      @enum Event
@@ -644,7 +645,7 @@ class P9MediaManager: NSObject {
     
     /*!
      @method volumeOfPlayerForKey:
-     @abstract Change mute status of the player for given key.
+     @abstract Get volume value of the player for given key.
      @param forKey Key value that you want to check
      @returns volume value from zero to one.
      */
@@ -655,7 +656,8 @@ class P9MediaManager: NSObject {
     
     /*!
      @method setVolumeOfPlayerVolume:ForKey:
-     @abstract Change mute status of the player for given key.
+     @abstract Change volume value of the player for given key.
+     @param Volumn value of volume by Float.
      @param forKey Key value that you want to check
      @returns volume value from zero to one.
      */
@@ -668,6 +670,37 @@ class P9MediaManager: NSObject {
         player.volume = volume
         
         notify(key: key, event: .mute, parameters: [P9MediaManager.NotificationVolumn:player.volume])
+        
+        return true
+    }
+    
+    /*!
+     @method playRateOfPlayerForKey:
+     @abstract Get play rate value of the player for given key.
+     @param forKey Key value that you want to check
+     @returns play rate value.
+     */
+    @objc func playRateOfPlayer(forKey key:String) -> Float {
+        
+        return nodes[key]?.player?.rate ?? 1
+    }
+    
+    /*!
+     @method setPlayRateOfPlayerVolume:ForKey:
+     @abstract Change play rate of the player for given key.
+     @param Play rate value by Float.
+     @param forKey Key value that you want to check
+     @returns play rate value.
+     */
+    @objc @discardableResult func setPlayRateOfPlayer(_ rate:Float, forKey key:String) -> Bool {
+        
+        guard let player = nodes[key]?.player else {
+            return false
+        }
+        
+        player.rate = rate
+        
+        notify(key: key, event: .mute, parameters: [P9MediaManager.NotificationPlayRate:player.rate])
         
         return true
     }
