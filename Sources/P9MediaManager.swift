@@ -24,7 +24,7 @@ extension Notification.Name {
  @class P9MediaManager
  @abstract Helper module to handling Media resource.
  */
-class P9MediaManager: NSObject {
+open class P9MediaManager: NSObject {
     
     /*!
      @abstract Available key list in Notification.userInfo from P9MediaManager's notification.
@@ -41,19 +41,19 @@ class P9MediaManager: NSObject {
      @constant NotificationMute Mute status by Bool.
      @constant NotificationVolumn Volumn value by Float from zero to one.
      */
-    @objc static let NotificationPlayerKey = "P9MediaManagerNotificationPlayerKey"
-    @objc static let NotificationEvent = "P9MediaManagerNotificationEvent"
-    @objc static let NotificationResourceUrlString = "P9MediaManagerNotificationResourceUrlString"
-    @objc static let NotificationHaveVideoTrack = "P9MediaManagerNotificationHaveVideoTrack"
-    @objc static let NotificationHaveAudioTrack = "P9MediaManagerNotificationHaveAudioTrack"
-    @objc static let NotificationHaveClosedCaptionTrack = "P9MediaManagerNotificationHaveClosedCaptionTrack"
-    @objc static let NotificationHaveSubtitleTrack = "P9MediaManagerNotificationHaveSubtitleTrack"
-    @objc static let NotificationAmountSeconds = "P9MediaManagerNotificationAmountSeconds"
-    @objc static let NotificationCurrentSeconds = "P9MediaManagerNotificationCurrentSeconds"
-    @objc static let NotificationAvailableSeconds = "P9MediaManagerNotificationAvailableSeconds"
-    @objc static let NotificationMute = "P9MediaManagerNotificationMute"
-    @objc static let NotificationVolumn = "P9MediaManagerNotificationVolumn"
-    @objc static let NotificationPlayRate = "P9MediaManagerNotificationPlayRate"
+    @objc public static let NotificationPlayerKey = "P9MediaManagerNotificationPlayerKey"
+    @objc public static let NotificationEvent = "P9MediaManagerNotificationEvent"
+    @objc public static let NotificationResourceUrlString = "P9MediaManagerNotificationResourceUrlString"
+    @objc public static let NotificationHaveVideoTrack = "P9MediaManagerNotificationHaveVideoTrack"
+    @objc public static let NotificationHaveAudioTrack = "P9MediaManagerNotificationHaveAudioTrack"
+    @objc public static let NotificationHaveClosedCaptionTrack = "P9MediaManagerNotificationHaveClosedCaptionTrack"
+    @objc public static let NotificationHaveSubtitleTrack = "P9MediaManagerNotificationHaveSubtitleTrack"
+    @objc public static let NotificationAmountSeconds = "P9MediaManagerNotificationAmountSeconds"
+    @objc public static let NotificationCurrentSeconds = "P9MediaManagerNotificationCurrentSeconds"
+    @objc public static let NotificationAvailableSeconds = "P9MediaManagerNotificationAvailableSeconds"
+    @objc public static let NotificationMute = "P9MediaManagerNotificationMute"
+    @objc public static let NotificationVolumn = "P9MediaManagerNotificationVolumn"
+    @objc public static let NotificationPlayRate = "P9MediaManagerNotificationPlayRate"
     
     /*!
      @enum Event
@@ -142,7 +142,7 @@ class P9MediaManager: NSObject {
      @constant fail
      Media resource for given key got some failure.
      */
-    @objc(P9MediaManagerEvent) enum Event: Int {
+    @objc(P9MediaManagerEvent) public enum Event: Int {
         case unknown
         case standby
         case standbyAgain
@@ -230,7 +230,7 @@ class P9MediaManager: NSObject {
      @property shared
      @abstract Singleton instance of P9MediaManager.
      */
-    @objc static let shared = P9MediaManager()
+    @objc public static let shared = P9MediaManager()
     
     /*!
      @method deinit
@@ -247,7 +247,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want.
      @returns Succeed or not.
      */
-    @objc @discardableResult func setPlayer(resourceUrl:URL, forKey key:String) -> Bool {
+    @objc @discardableResult public func setPlayer(resourceUrl:URL, forKey key:String) -> Bool {
         
         let node = nodes[key] ?? PlayNode()
         let resourceUrlString = resourceUrl.absoluteString
@@ -268,7 +268,7 @@ class P9MediaManager: NSObject {
      @param resourceUrl Url of your resource and using url string by key automatically.
      @returns Succeed or not.
      */
-    @objc @discardableResult func setPlayer(resourceUrl:URL) -> Bool {
+    @objc @discardableResult public func setPlayer(resourceUrl:URL) -> Bool {
         
         return setPlayer(resourceUrl: resourceUrl, forKey: resourceUrl.absoluteString)
     }
@@ -278,7 +278,7 @@ class P9MediaManager: NSObject {
      @abstract Release player for given key. You can release player when you don't need anymore for efficient resource management.
      @param forKey Key value that you want to release.
      */
-    @objc func releasePlayer(forKey key:String) {
+    @objc public func releasePlayer(forKey key:String) {
         
         guard let node = nodes[key] else {
             return
@@ -305,7 +305,7 @@ class P9MediaManager: NSObject {
      @method releaseAllPlayers
      @abstract Release all players.
      */
-    @objc func releaseAllPlayers() {
+    @objc public func releaseAllPlayers() {
         
         for (key, node) in nodes {
             if let player = node.player {
@@ -336,7 +336,7 @@ class P9MediaManager: NSObject {
      @param autoPlayWhenReadyFlag If you want to auto play when given resource ready then set it.
      @returns Succeed or not.
      */
-    @objc @discardableResult func placePlayer(forKey key:String, toView:UIView, mute:Bool, loop:Bool, autoPlayWhenReadyFlag:Bool) -> Bool {
+    @objc @discardableResult public func placePlayer(forKey key:String, toView:UIView, mute:Bool, loop:Bool, autoPlayWhenReadyFlag:Bool) -> Bool {
         
         guard let node = nodes[key], let player = node.player, let playerLayer = toView.layer as? AVPlayerLayer else {
             return false
@@ -376,7 +376,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to place.
      @returns Succeed or not.
      */
-    @objc @discardableResult func displacePlayer(forKey key:String) -> Bool {
+    @objc @discardableResult public func displacePlayer(forKey key:String) -> Bool {
         
         guard let node = nodes[key], let placeAvLayer = node.playerLayer else {
             return false
@@ -396,7 +396,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to play.
      @returns Succeed or not.
      */
-    @objc @discardableResult func playPlayer(forKey key:String) -> Bool {
+    @objc @discardableResult public func playPlayer(forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player, playbackTimeObservers[player] != nil else {
             return false
@@ -417,7 +417,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to play.
      @returns Succeed or not.
      */
-    @objc @discardableResult func playPlayerWhenReady(loop:Bool, forKey key:String) -> Bool {
+    @objc @discardableResult public func playPlayerWhenReady(loop:Bool, forKey key:String) -> Bool {
         
         guard let node = nodes[key], let player = node.player else {
             return false
@@ -440,7 +440,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to pause.
      @returns Succeed or not.
      */
-    @objc @discardableResult func pausePlayer(forKey key:String) -> Bool {
+    @objc @discardableResult public func pausePlayer(forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -458,7 +458,7 @@ class P9MediaManager: NSObject {
      @method pauseAllPlayers
      @abstract Pause all players.
      */
-    @objc func pauseAllPlayers() {
+    @objc public func pauseAllPlayers() {
         
         for (key, node) in nodes {
             if let player = node.player {
@@ -472,7 +472,7 @@ class P9MediaManager: NSObject {
      @method pauseAllPlayersExceptOneForKey:
      @abstract Pause all players except player for given key.
      */
-    @objc func pauseAllPlayersExceptOne(forKey remainKey:String) {
+    @objc public func pauseAllPlayersExceptOne(forKey remainKey:String) {
         
         for (key, node) in nodes {
             if let player = node.player, key != remainKey  {
@@ -488,7 +488,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to set.
      @returns Succeed or not.
      */
-    @objc @discardableResult func setClosedCaptionDisplay(enabled:Bool, forKey key:String) -> Bool {
+    @objc @discardableResult public func setClosedCaptionDisplay(enabled:Bool, forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -509,7 +509,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check.
      @returns Succeed or not.
      */
-    @objc func subtitleDisplayNamesOfPlayer(forKey key:String) -> [String]? {
+    @objc public func subtitleDisplayNamesOfPlayer(forKey key:String) -> [String]? {
         
         guard let node = nodes[key] else {
             return nil
@@ -525,7 +525,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to set.
      @returns Succeed or not.
      */
-    @objc @discardableResult func selectSubtitle(byDisplayName displayName:String?, forKey key:String) -> Bool {
+    @objc @discardableResult public func selectSubtitle(byDisplayName displayName:String?, forKey key:String) -> Bool {
         
         guard let node = nodes[key], let player = node.player, let item = node.mediaItem?.playerItem, playbackTimeObservers[player] != nil else {
             return false
@@ -550,7 +550,7 @@ class P9MediaManager: NSObject {
      @abstract Get current time of player for given key.
      @param forKey Key value that you want to get current time.
      */
-    @objc func seekTimeOfPlayer(forKey key:String) -> Int64 {
+    @objc public func seekTimeOfPlayer(forKey key:String) -> Int64 {
         
         guard let player = nodes[key]?.player else {
             return 0
@@ -567,9 +567,9 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to seek.
      @returns Succeed or not.
      */
-    @objc @discardableResult func setSeekTimeOfPlayer(seekTimeValue:Int64, seekTimeScale:Int32=1, forKey key:String) -> Bool {
+    @objc @discardableResult public func setSeekTimeOfPlayer(seekTimeValue:Int64, seekTimeScale:Int32=1, forKey key:String) -> Bool {
         
-        guard let node = nodes[key], let player = node.player, node.amountSeconds > 0 else {
+        guard let node = nodes[key], let player = node.player else {
             return false
         }
         
@@ -600,9 +600,9 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to seek.
      @returns Succeed or not.
      */
-    @objc @discardableResult func setSeekTimeOfPlayer(rate:Float, forKey key:String) -> Bool {
+    @objc @discardableResult public func setSeekTimeOfPlayer(rate:Float, forKey key:String) -> Bool {
         
-        guard rate >= 0, rate <= 1, let node = nodes[key], node.amountSeconds > 0 else {
+        guard rate >= 0, rate <= 1, let node = nodes[key] else {
             return false
         }
         
@@ -618,7 +618,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns muted or not.
      */
-    @objc func isMutedPlayer(forKey key:String) -> Bool {
+    @objc public func isMutedPlayer(forKey key:String) -> Bool {
         
         return nodes[key]?.player?.isMuted ?? false
     }
@@ -630,7 +630,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns succeed or not.
      */
-    @objc @discardableResult func setMutePlayer(mute:Bool, forKey key:String) -> Bool {
+    @objc @discardableResult public func setMutePlayer(mute:Bool, forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -649,7 +649,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns volume value from zero to one.
      */
-    @objc func volumeOfPlayer(forKey key:String) -> Float {
+    @objc public func volumeOfPlayer(forKey key:String) -> Float {
         
         return nodes[key]?.player?.volume ?? 0
     }
@@ -661,7 +661,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns volume value from zero to one.
      */
-    @objc @discardableResult func setVolumeOfPlayer(volume:Float, forKey key:String) -> Bool {
+    @objc @discardableResult public func setVolumeOfPlayer(volume:Float, forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -680,7 +680,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns play rate value.
      */
-    @objc func playRateOfPlayer(forKey key:String) -> Float {
+    @objc public func playRateOfPlayer(forKey key:String) -> Float {
         
         return nodes[key]?.player?.rate ?? 1
     }
@@ -692,7 +692,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns play rate value.
      */
-    @objc @discardableResult func setPlayRateOfPlayer(_ rate:Float, forKey key:String) -> Bool {
+    @objc @discardableResult public func setPlayRateOfPlayer(_ rate:Float, forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -711,7 +711,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns exist or not.
      */
-    @objc func havePlayer(forKey key:String) -> Bool {
+    @objc public func havePlayer(forKey key:String) -> Bool {
         
         return (nodes[key]?.player != nil)
     }
@@ -722,7 +722,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns URL or nil.
      */
-    @objc func resourceUrlOfPlayer(forKey key:String) -> URL? {
+    @objc public func resourceUrlOfPlayer(forKey key:String) -> URL? {
         
         return nodes[key]?.mediaItem?.resourceUrl
     }
@@ -733,7 +733,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check
      @returns Track information by NotificationHaveVideoTrack, NotificationHaveAudioTrack, NotificationHaveClosedCaptionTrack and NotificationHaveSubtitleTrack key/value.
      */
-    @objc func trackInfoOfPlayer(forKey key:String) -> [String:Any]? {
+    @objc public func trackInfoOfPlayer(forKey key:String) -> [String:Any]? {
         
         guard let node = nodes[key] else {
             return nil
@@ -751,7 +751,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check.
      @returns placed or not.
      */
-    @objc func isPlacedPlayer(forKey key:String) -> Bool {
+    @objc public func isPlacedPlayer(forKey key:String) -> Bool {
         
         return (nodes[key]?.playerLayer != nil)
     }
@@ -762,7 +762,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check.
      @returns playing or not.
      */
-    @objc func isPlayingPlayer(forKey key:String) -> Bool {
+    @objc public func isPlayingPlayer(forKey key:String) -> Bool {
         
         guard let player = nodes[key]?.player else {
             return false
@@ -777,7 +777,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check.
      @returns Amount seconds.
      */
-    @objc func amountSecondsOfPlayer(forKey key:String) -> Int64 {
+    @objc public func amountSecondsOfPlayer(forKey key:String) -> Int64 {
         
         return nodes[key]?.amountSeconds ?? 0
     }
@@ -788,7 +788,7 @@ class P9MediaManager: NSObject {
      @param forKey Key value that you want to check.
      @returns Current seconds.
      */
-    @objc func currentSecondsOfPlayer(forKey key:String) -> Int64 {
+    @objc public func currentSecondsOfPlayer(forKey key:String) -> Int64 {
         
         guard let playerItem = nodes[key]?.mediaItem?.playerItem else {
             return 0
@@ -804,7 +804,7 @@ class P9MediaManager: NSObject {
      @param ofPlayerKey Player key that you want to check.
      @returns value
      */
-    @objc func customValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Any? {
+    @objc public func customValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Any? {
         
         return nodes[playerKey]?.userInfo[customKey] ?? nil
     }
@@ -817,7 +817,7 @@ class P9MediaManager: NSObject {
      @param ofPlayerKey Player key that you want to check.
      @returns stored or not
      */
-    @objc @discardableResult func setCustom(value:Any, forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
+    @objc @discardableResult public func setCustom(value:Any, forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
         
         guard let node = nodes[playerKey] else {
             return false
@@ -835,7 +835,7 @@ class P9MediaManager: NSObject {
      @param ofPlayerKey Player key that you want to check.
      @returns removed or not
      */
-    @objc @discardableResult func removeCustomeValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
+    @objc @discardableResult public func removeCustomeValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
         
         guard let node = nodes[playerKey] else {
             return false
@@ -854,7 +854,7 @@ class P9MediaManager: NSObject {
      @param useMemoryCache P9MediaManagaer make memory cache for given resource url and pick second automatically. If you want get cached snapshot image immediately, set it to true.
      @param completion Business code block to execute after get snapshot image.
      */
-    @objc func snapshotImage(ofResourceUrl resourceUrl:URL, pickSecond:Int64, useMemoryCache:Bool, completion: @escaping ((URL, Int64, UIImage?) -> Void)) {
+    @objc public func snapshotImage(ofResourceUrl resourceUrl:URL, pickSecond:Int64, useMemoryCache:Bool, completion: @escaping ((URL, Int64, UIImage?) -> Void)) {
         
         let urlString = resourceUrl.absoluteString
         if useMemoryCache == true, let snapshot = snapshots[urlString], snapshot.pickSecond == pickSecond {
@@ -891,7 +891,7 @@ class P9MediaManager: NSObject {
      @method removeSnapshotCacheResourceUrl:
      @abstract Remove cached snapshot image for given media resource url.
      */
-    @objc func removeSnapshotCache(resourceUrl:URL) {
+    @objc public func removeSnapshotCache(resourceUrl:URL) {
         
         snapshots.removeValue(forKey: resourceUrl.absoluteString)
     }
@@ -900,7 +900,7 @@ class P9MediaManager: NSObject {
      @method removeAllSnapshotCache
      @abstract Remove all cached snapshot images.
      */
-    @objc func removeAllSnapshotCache() {
+    @objc public func removeAllSnapshotCache() {
         
         snapshots.removeAll()
     }
@@ -909,7 +909,7 @@ class P9MediaManager: NSObject {
      @method snapshotPlayerForKey:
      @abstract Get snapshot current frame of player for given key.
      */
-    @objc func snapshotPlayer(forKey key:String) -> UIImage? {
+    @objc public func snapshotPlayer(forKey key:String) -> UIImage? {
         
         guard let node = nodes[key], let playerItem = node.mediaItem?.playerItem, let videoOutput = node.mediaItem?.playerItemVideoOutput else {
             return nil
@@ -1015,7 +1015,7 @@ extension P9MediaManager {
 
 extension P9MediaManager {
     
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         
         guard let keyPath = keyPath, let item = object as? AVPlayerItem, let key = keyForPlayerItem[item], let node = nodes[key], let player = node.player else {
             return
@@ -1108,7 +1108,7 @@ extension P9MediaManager {
         }
     }
     
-    @objc func avPlayerItemDidPlayToEndTimeHandler(notification:Notification) {
+    @objc public func avPlayerItemDidPlayToEndTimeHandler(notification:Notification) {
         
         guard let item = notification.object as? AVPlayerItem, let key = keyForPlayerItem[item], let node = nodes[key] else {
             return
