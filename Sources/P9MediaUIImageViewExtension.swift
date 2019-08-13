@@ -9,7 +9,7 @@
 
 import UIKit
 
-@objc extension UIImageView {
+@objc public extension UIImageView {
     
     /*!
      @property p9MediaView
@@ -59,7 +59,7 @@ import UIKit
      @method p9MediaPause
      @abstract Pause player
      */
-    func p9MediaPause() {
+    @objc func p9MediaPause() {
         
         P9MediaManager.shared.pausePlayer(forKey: p9MediaView.suggestedKey)
     }
@@ -68,7 +68,7 @@ import UIKit
      @method p9MediaResume
      @abstract Resume player
      */
-    func p9MediaResume() {
+    @objc func p9MediaResume() {
         
         P9MediaManager.shared.playPlayer(forKey: p9MediaView.suggestedKey)
     }
@@ -77,7 +77,7 @@ import UIKit
      @method p9MediaClear
      @abstract Clear P9MediaView resource
      */
-    func p9MediaClear() {
+    @objc func p9MediaClear() {
         
         for subview in subviews {
             if let playView = subview as? P9MediaView, playView.tag == P9MediaView.suggestedTagIdForSinglePlay {
