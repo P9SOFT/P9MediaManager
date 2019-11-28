@@ -113,6 +113,92 @@ NotificationCenter.default.addObserver(self, selector: #selector(self.p9MediaMan
 }
 ```
 
+# Control
+
+Here are control functions you can use.
+
+```swift
+// play player for given key.
+func playPlayer(forKey key:String) -> Bool
+
+// pause player for given key.
+func pausePlayer(forKey key:String) -> Bool
+
+// pause all players.
+func pauseAllPlayers()
+
+// pause all players except player for given key.
+func pauseAllPlayersExceptOne(forKey remainKey:String)
+
+// set display or not closed caption of player for given key.
+func setClosedCaptionDisplay(enabled:Bool, forKey key:String) -> Bool
+
+// get subtitle names of player for given key.
+func subtitleDisplayNamesOfPlayer(forKey key:String) -> [String]?
+
+// select subtitle of player for given key by display name.
+func selectSubtitle(byDisplayName displayName:String?, forKey key:String) -> Bool
+
+// get current seek time of player for given key.
+func seekTimeOfPlayer(forKey key:String) -> Int64
+
+// set seek time of player for given key by time value and scale.
+func setSeekTimeOfPlayer(seekTimeValue:Int64, seekTimeScale:Int32=1, forKey key:String) -> Bool
+
+// set seek time of player for given key by time rate.
+func setSeekTimeOfPlayer(rate:Float, forKey key:String) -> Bool
+
+// get mute status of player for given key.
+func isMutedPlayer(forKey key:String) -> Bool
+
+// set mute sttuse of player for given key.
+func setMutePlayer(mute:Bool, forKey key:String) -> Bool
+
+// get volume value of player for given key.
+func volumeOfPlayer(forKey key:String) -> Float
+
+// set volume value of player for given key.
+func setVolumeOfPlayer(volume:Float, forKey key:String) -> Bool
+
+// get playing rate of player for given key.
+func playRateOfPlayer(forKey key:String) -> Float
+
+// set playing rate of player for given key.
+func setPlayRateOfPlayer(_ rate:Float, forKey key:String) -> Bool
+
+// check the player ready for given key.
+func havePlayer(forKey key:String) -> Bool
+
+// get URL of player resource for given key.
+func resourceUrlOfPlayer(forKey key:String) -> URL?
+
+// get tracking infomation data from player for given key.
+func trackInfoOfPlayer(forKey key:String) -> [String:Any]?
+
+// check placing status of player for given key.
+func isPlacedPlayer(forKey key:String) -> Bool
+
+// check playing status of player for given key.
+func isPlayingPlayer(forKey key:String) -> Bool
+
+// get amount of seconds of player resource for given key.
+func amountSecondsOfPlayer(forKey key:String) -> Int64
+
+// get current second of player for given key.
+func currentSecondsOfPlayer(forKey key:String) -> Int64
+
+// get custom value of key you've setted to player for given key.
+func customValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Any?
+
+// set custom value for key to player for given key.
+func setCustom(value:Any, forKey customKey:String, ofPlayerKey playerKey:String) -> Bool
+
+// remove custom value for key from player for given key.
+func removeCustomeValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool
+```
+
+# Snapshot
+
 And, you can get snapshot image from media resource url, without making player.
 
 ```swift
