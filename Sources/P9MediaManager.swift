@@ -835,7 +835,7 @@ open class P9MediaManager: NSObject {
      @param ofPlayerKey Player key that you want to check.
      @returns removed or not
      */
-    @objc @discardableResult public func removeCustomeValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
+    @objc @discardableResult public func removeCustomValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool {
         
         guard let node = nodes[playerKey] else {
             return false

@@ -194,7 +194,7 @@ func customValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Any?
 func setCustom(value:Any, forKey customKey:String, ofPlayerKey playerKey:String) -> Bool
 
 // remove custom value for key from player for given key.
-func removeCustomeValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool
+func removeCustomValue(forKey customKey:String, ofPlayerKey playerKey:String) -> Bool
 ```
 
 # Snapshot
